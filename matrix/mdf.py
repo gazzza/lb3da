@@ -30,18 +30,32 @@ class MDFile(object):
             return matrix[pid]
         else:
             return matrix        
-    
+
+
+class MDMixin(object):
+    default_outputs = ['position','velocity','orientation','angular_velocity','id']
+    all_outputs = OrderedDict([('position',3),('velocity',3),('force',3),('orientation_q',4),
+                               ('orientation',3),('angular_velocity',3),('torque',3),('id',1)])
+
+    def __init__(self,matrix):
+        self.outputs = self.default_outputs
+        
+    def md_outputs(self,outputs_list=[]):
+        """Returns the list of quantities, in order, used in the output file. If no additional quantities are defined
+        the function returns the default ordered list as per MDMatrix.all_outputs"""
+        if 'reset' in outputs_list:
+            self.outputs = self.default_outputs
+        else:
+            self.outputs = sorted(self.default_outputs + outputs_list,key=self.all_outputs.keys().index)
+        return self.outputs
 
 class MDMatrix(object):
     """Create an MDMatrix object e.g. matrix = MDMatrix(MDfile.create_matrix)"""
     
-    default_outputs = ['position','velocity','orientation','angular_velocity','id']
-    all_outputs = OrderedDict([('position',3),('velocity',3),('force',3),('orientation_q',4),
-                               ('orientation',3),('angular_velocity',3),('torque',3),('id',1)])
     def __init__(self,matrix):
-        self.m = np.array(matrix)
+        super(MDMixin,self).__init__()
         self.shape = self.m.shape
-        self.outputs = self.default_outputs
+        self.m = 
 
     def md_outputs(self,outputs_list=[]):
         """Returns the list of quantities, in order, used in the output file. If no additional quantities are defined
