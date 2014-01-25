@@ -214,8 +214,13 @@ class MDMatrix(object):
         return self._3vector('id',pid)
 
 
+    def angle(self,pid=None):
+        orientation_matrix = self.o(pid)
+        if pid is not None:
+            return np.arccos(orientation_matrix/np.linalg.norm(orientation_matrix))
+        else:
+            return np.arccos(orientation_matrix/np.reshape(np.linalg.norm(orientation_matrix,axis=1),(orientation_matrix.shape[0],1)))
 
-        
 
 
 
