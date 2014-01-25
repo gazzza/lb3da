@@ -215,7 +215,7 @@ class MDMatrix(object):
 
 
     def angle(self,pid=None,radians=False):
-        """Returns the orientation of the particles with respect to a particular axis i.e. 
+        """Returns the orientation of the particle with respect to a particular axis i.e. 
         the dot product of the particle's orientation vector and the corresponding axis"""
         orientation_matrix = self.o(pid)
         if pid is not None:
