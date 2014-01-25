@@ -32,39 +32,16 @@ class MDFile(object):
             return matrix        
 
 
-class MDMixin(object):
-    default_outputs = ['position','velocity','orientation','angular_velocity','id']
-    all_outputs = OrderedDict([('position',3),('velocity',3),('force',3),('orientation_q',4),
-                               ('orientation',3),('angular_velocity',3),('torque',3),('id',1)])
-
-    def __init__(self,matrix):
-        self.outputs = self.default_outputs
-        
-    def md_outputs(self,outputs_list=[]):
-        """Returns the list of quantities, in order, used in the output file. If no additional quantities are defined
-        the function returns the default ordered list as per MDMatrix.all_outputs"""
-        if 'reset' in outputs_list:
-            self.outputs = self.default_outputs
-        else:
-            self.outputs = sorted(self.default_outputs + outputs_list,key=self.all_outputs.keys().index)
-        return self.outputs
-
 class MDMatrix(object):
     """Create an MDMatrix object e.g. matrix = MDMatrix(MDfile.create_matrix)"""
-    
-    def __init__(self,matrix):
-        super(MDMixin,self).__init__()
+    _default_outputs = ['position','velocity','orientation','angular_velocity','id']
+    _all_outputs = OrderedDict([('position',3),('velocity',3),('force',3),('orientation_q',4),
+                               ('orientation',3),('angular_velocity',3),('torque',3),('id',1)])    
+    def __init__(self,matrix,outputs_list=[]):
+        self.outputs = sorted(self._default_outputs + outputs_list,key=self._all_outputs.keys().index)
+        self.m = np.array(matrix)
         self.shape = self.m.shape
-        self.m = 
-
-    def md_outputs(self,outputs_list=[]):
-        """Returns the list of quantities, in order, used in the output file. If no additional quantities are defined
-        the function returns the default ordered list as per MDMatrix.all_outputs"""
-        if 'reset' in outputs_list:
-            self.outputs = self.default_outputs
-        else:
-            self.outputs = sorted(self.default_outputs + outputs_list,key=self.all_outputs.keys().index)
-        return self.outputs
+        self._indices_dict = self._indices()
 
     def _indices(self):
         """Calculates where along each row vector the relevant quantities 
@@ -72,7 +49,7 @@ class MDMatrix(object):
         index = 0
         indices_dict = {}
         for quantity in self.outputs:
-            newindex = index + self.all_outputs[quantity]
+            newindex = index + self._all_outputs[quantity]
             indices_dict[quantity] = (index,newindex)
             index = newindex
         return indices_dict
@@ -81,7 +58,7 @@ class MDMatrix(object):
         """Extracts 3 array values depending on the quantity 
         defined and additionally returns their norm"""
         try:
-            i,j = self._indices()[quantity]
+            i,j = self._indices_dict[quantity]
         except KeyError:
             print "You didn't set " + quantity + "in the output parameters"
             return None
@@ -97,7 +74,7 @@ class MDMatrix(object):
         """Extracts 3 array values according to their precedence 
         in the all_outputs list and the quantities defined""" 
         try:
-            i,j = self._indices()[quantity]
+            i,j = self._indices_dict[quantity]
         except KeyError:
             print "You didn't set " + quantity + " in the output parameters"
             return None
