@@ -25,11 +25,3 @@ class OutputDir(object):
             return [file for file in self.list() if (os.path.splitext(file)[1] == file_ext)]
         else: 
             return [file for file in self.list() if (prefix in file.split('_')[0] and os.path.splitext(file)[1] == file_ext)]
-            
-    def filter(self,prefix,file_ext):
-        """Returns a list of files which match prefix and suffix"""
-        return [file for file in self.list if (prefix in file.split('_')[0] and os.path.splitext(file)[1] == file_ext)]
-
-    def filter_ext(self,file_ext):
-        """Returns a list of files which match the file extension"""
-        return [file for file in self.list if (os.path.splitext(file)[1] == file_ext)]
