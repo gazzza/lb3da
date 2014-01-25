@@ -2,6 +2,8 @@
 
 import os
 import numpy as np
+import re
+
 from collections import OrderedDict
 
 class MDFile(object):
@@ -30,6 +32,19 @@ class MDFile(object):
             return matrix[pid]
         else:
             return matrix        
+    
+    def tstep(self):
+        """Strips the tstep out of the filename and returns it as an int"""
+        fname = os.path.split(self.f)[1]
+        str = re.search('t\d\d\d\d\d\d\d\d-\d\d\d\d\d\d\d\d\d\d',fname).group()
+        splitstr = str.split('-')[0]
+        strip_zeros = splitstr.lstrip('t0')
+        return int(strip_zeros)
+        
+        
+        
+        
+
 
 
 class MDMatrix(object):
