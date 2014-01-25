@@ -214,12 +214,19 @@ class MDMatrix(object):
         return self._3vector('id',pid)
 
 
-    def angle(self,pid=None):
+    def angle(self,pid=None,radians=False):
+        """Returns the orientation of the particles with respect to a particular axis i.e. 
+        the dot product of the particle's orientation vector and the corresponding axis"""
         orientation_matrix = self.o(pid)
         if pid is not None:
-            return np.arccos(orientation_matrix/np.linalg.norm(orientation_matrix))
+            result = np.arccos(orientation_matrix/np.linalg.norm(orientation_matrix))
         else:
-            return np.arccos(orientation_matrix/np.reshape(np.linalg.norm(orientation_matrix,axis=1),(orientation_matrix.shape[0],1)))
+            result = np.arccos(orientation_matrix/np.reshape(np.linalg.norm(orientation_matrix,axis=1),(orientation_matrix.shape[0],1)))
+
+        if radians:
+            return result
+        else:
+            return np.rad2deg(result)
 
 
 
