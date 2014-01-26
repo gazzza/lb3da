@@ -41,12 +41,6 @@ class MDFile(object):
         strip_zeros = splitstr.lstrip('t0')
         return int(strip_zeros)
         
-        
-        
-        
-
-
-
 class MDMatrix(object):
     """Create an MDMatrix object e.g. matrix = MDMatrix(MDfile.create_matrix)"""
     _default_outputs = ['position','velocity','orientation','angular_velocity','id']
@@ -213,7 +207,7 @@ class MDMatrix(object):
 
         return self._3vector('id',pid)
 
-    def _get_angle_matrix(self,pid):
+    def _get_angle_matrix(self,pid=None):
         orientation_matrix = self.o(pid)
         if pid is not None:
             return orientation_matrix/np.linalg.norm(orientation_matrix)
@@ -231,8 +225,20 @@ class MDMatrix(object):
         else:
             return np.rad2deg(cos_angle_matrix)
 
+    def S(self):
+        """Returns the S orientational order parameter, S=0.5*<3cos^2x -1> where x 
+        is the angle between the INTERFACE NORMAL and the particle symmetry axis"""
+        angle_matrix = self.angle(radians=True)
+        s_avg_part = 3*np.cos(angle_matrix)**2 - 1
+        s_avg = np.mean(s_avg_part,axis=0)
+        full_s = 0.5*s_avg
+        return full_s
 
-
-
-
-
+    def Q(self):
+        """Returns the Q orientational order parameter, Q=1.5*<sin^2x cos2y> where x 
+        is the angle between the INTERFACE NORMAL and the particle symmetry axis"""
+        angle_matrix = self.angle(radians=True)
+        q_avg_part = (np.sin(angle_matrix)**2)*np.cos(2*angle_matrix)
+        q_avg = np.mean(q_avg_part,axis=0)
+        full_q = 1.5*q_avg
+        return full_q
