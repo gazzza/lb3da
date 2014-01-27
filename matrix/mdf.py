@@ -241,7 +241,6 @@ class MDMatrix(object):
         sint = np.sin(angle_matrix)**2
         cost = np.cos(2*angle_matrix)
 
-
-        full_Q = np.array([[np.mean(sint[:,i]*cost[:,j]) for j in xrange(cost.shape[1])] for i in xrange(sint.shape[1])])
-
+        full_Q = np.dot(sint.T,cost)/sint.shape[0]
+        
         return 1.5*full_Q
