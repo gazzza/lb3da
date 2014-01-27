@@ -238,12 +238,10 @@ class MDMatrix(object):
         """Returns the Q orientational order parameter, Q=1.5*<sin^2x cos2y> where x 
         is the angle between the INTERFACE NORMAL and the particle symmetry axis"""
         angle_matrix = self.angle(radians=True)
-        sin_term = np.sin(angle_matrix)**2
-        cos_term = np.cos(2*angle_matrix)
+        sint = np.sin(angle_matrix)**2
+        cost = np.cos(2*angle_matrix)
 
 
-        xy = np.mean(sin_term[:,0]*cos_term[:,1])
-        xz = np.mean(sin_term[:,0]*cos_term[:,2])
-        yz = np.mean(sin_term[:,1]*cos_term[:,2])        
+        full_Q = np.array([[np.mean(sint[:,i]*cost[:,j]) for j in xrange(cost.shape[1])] for i in xrange(sint.shape[1])])
 
-        return 1.5*np.array([xy,xz,yz])
+        return 1.5*full_Q
