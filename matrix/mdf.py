@@ -244,3 +244,13 @@ class MDMatrix(object):
         full_Q = np.dot(sint.T,cost)/sint.shape[0]
         
         return 1.5*full_Q
+
+    def displacements(self,pid=0):
+        """This function will return the displacements between 
+        the particle chosen in pid and all other particles"""
+        return self.x(pid) - self.x()
+
+    def distances(self,pid=0):
+        """This function will return the absolute distances between 
+        the particle chosen by pid and all other particles"""
+        return np.abs(self.displacements(pid))
