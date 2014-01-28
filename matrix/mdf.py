@@ -49,7 +49,7 @@ class MDMatrix(object):
     def __init__(self,matrix,outputs_list=[]):
         self.outputs = sorted(self._default_outputs + outputs_list,key=self._all_outputs.keys().index)
         self.m = np.array(matrix)
-        self.shape = self.m.shape
+        self.N = self.m.shape[0]
         self._indices_dict = self._indices()
 
     def _indices(self):
@@ -77,7 +77,7 @@ class MDMatrix(object):
             return np.hstack((quant,np.linalg.norm(quant)))
         else:
             quant = self.m[:,i:j]    
-            return np.hstack((quant,np.reshape(np.linalg.norm(quant,axis=1),(self.shape[0],1))))
+            return np.hstack((quant,np.reshape(np.linalg.norm(quant,axis=1),(self.N,1))))
 
     def _3vector(self,quantity,pid=None):
         """Extracts 3 array values according to their precedence 
@@ -212,7 +212,7 @@ class MDMatrix(object):
         if pid is not None:
             return orientation_matrix/np.linalg.norm(orientation_matrix)
         else:
-            return orientation_matrix/np.reshape(np.linalg.norm(orientation_matrix,axis=1),(orientation_matrix.shape[0],1))
+            return orientation_matrix/np.reshape(np.linalg.norm(orientation_matrix,axis=1),(self.N,1))
     
     def angle(self,pid=None,radians=False):
         """Returns the orientation of the particle with respect to a particular axis i.e. 
@@ -245,12 +245,19 @@ class MDMatrix(object):
         
         return 1.5*full_Q
 
-    def displacements(self,pid=0):
-        """This function will return the displacements between 
-        the particle chosen in pid and all other particles"""
-        return self.x(pid) - self.x()
 
-    def distances(self,pid=0):
+    def displacements(self,x=None):
+        """This function will return the displacements of all the particles
+        and a coordinate"""
+        if x is not None:
+            return self.x() - np.array(x)
+        else:
+            return self.x() - self.x(0)
+
+    def distances(self,x=None):
         """This function will return the absolute distances between 
-        the particle chosen by pid and all other particles"""
-        return np.abs(self.displacements(pid))
+        the particles and a specified coordinate"""
+
+        displacement_matrix = self.displacements(x)
+
+        return np.reshape(np.linalg.norm(displacement_matrix,axis=1),(self.N,1))
