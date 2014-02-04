@@ -261,3 +261,63 @@ class MDMatrix(object):
         displacement_matrix = self.displacements(x)
 
         return np.reshape(np.linalg.norm(displacement_matrix,axis=1),(self.N,1))
+
+    @staticmethod
+    def _periodic_filter(array):
+        Lx,Ly,Lz = (128,96,96)
+    #    array[:,0] = np.where(array[:,0] >= 0.5*Lx, array[:,0] - Lx, array[:,0])
+    
+        array[:,1] = np.where(array[:,1] >= 0.5*Ly, array[:,1] - Ly , array[:,1])
+        array[:,2] = np.where(array[:,2] >= 0.5*Lz, array[:,2] - Lz , array[:,2])
+
+        return array
+
+    def pair_correlation_function(self):
+        allcoords = self.x()
+        Lx,Ly,Lz = (128,96,96)
+        shell_r = 15
+        rho = np.float(self.N)/(Lx*Ly*Lz) 
+        dr = 1.0
+        maxR = int(np.ceil(min(Lx/2,Ly/2,Lz/2) - dr - shell_r)) 
+        print 'Max R: ' + str(maxR)
+        print 'Total N:' + str(self.N)
+
+        bool_array = self.distances((64,64,64)) < shell_r
+        bool_array = bool_array.reshape(self.N)
+        coords = allcoords[bool_array,:]
+
+        N = coords.shape[0]
+        print 'Number of considered particles: ' + str(N)
+
+        rvals  = [] 
+        pvals  = [] 
+
+        for r in np.nditer(np.arange(0,maxR+1,dr)):
+            total_particles_in_shell = 0           
+            for i in coords:                       
+                raw_dists                 = self.displacements(i)
+                filtered_dists            = MDMatrix._periodic_filter(raw_dists)
+                dists                     = np.linalg.norm(filtered_dists,axis=1)
+                dists                     = dists[np.where(dists != 0.0)]
+                shell                     = dists[(np.where((dists >= r) & (dists <= r + dr)))]
+                number_in_shell           = shell.size                                         
+                total_particles_in_shell += number_in_shell                                    
+
+        
+            shell_vol = (4*np.pi/3.)*((r + dr)**3 - r**3)                           
+            normalised_by_number_of_p        = total_particles_in_shell/np.float(N) 
+            normalised_by_shell_volume       = normalised_by_number_of_p/shell_vol  
+            normalised_by_number_density     = normalised_by_shell_volume/rho       
+
+        
+            rvals.append(r)                             
+            pvals.append(normalised_by_number_density) 
+
+
+        return (np.array(rvals),np.array(pvals))
+    
+        
+
+
+
+    
