@@ -263,51 +263,92 @@ class MDMatrix(object):
         return np.reshape(np.linalg.norm(displacement_matrix,axis=1),(self.N,1))
 
     @staticmethod
-    def _periodic_filter(array):
-        Lx,Ly,Lz = (128,96,96)
-    #    array[:,0] = np.where(array[:,0] >= 0.5*Lx, array[:,0] - Lx, array[:,0])
-    
-        array[:,1] = np.where(array[:,1] >= 0.5*Ly, array[:,1] - Ly , array[:,1])
-        array[:,2] = np.where(array[:,2] >= 0.5*Lz, array[:,2] - Lz , array[:,2])
+    def _periodic_filter(array,dims,periodicity):
+        """This function takes into account the periodic boundary conditions of the system.
+        If the boundary is periodic, then whenever the particle distance is greater than half 
+        the system dimension in that axis direction, we must subtract half the system size 
+        in that direction to account for the fact that the periodic images are closer"""
+        
+        Lx,Ly,Lz = dims
+        
+        if periodicity[0]:
+            array[:,0] = np.where(array[:,0] >= 0.5*Lx, array[:,0] - Lx, array[:,0])
+        
+        if periodicity[1]:
+            array[:,1] = np.where(array[:,1] >= 0.5*Ly, array[:,1] - Ly , array[:,1])
+        
+        if periodicity[2]:
+            array[:,2] = np.where(array[:,2] >= 0.5*Lz, array[:,2] - Lz , array[:,2])
 
         return array
 
-    def pair_correlation_function(self):
-        allcoords = self.x()
-        Lx,Ly,Lz = (128,96,96)
-        shell_r = 15
-        rho = np.float(self.N)/(Lx*Ly*Lz) 
-        dr = 1.0
+    def pair_correlation_function(self,dims=(128,96,96),periodicity=(False,True,True),shell_r=15,dr=1.0):
+        """Calculates the pair correlation function (pcf). This pcf differs from most in the literature 
+        because it can handle non-periodic boundaries and finite-sized particles. 
+
+        The algorithm should be used as follows:
+        
+        1) Select some particles close to the centre of the system by choosing shell_r parameter. 
+        E.g. shell_r = 15 will find all particles within a distance of 15 of the centre of the system.
+
+        2) Choose how many concentric shells you want by choosing dr. 
+        Make sure you take into account your particle sizes when selecting dr. 
+        E.g. Does choosing dr < 1.0 give meaningful results if your particles are radius 5?
+        
+        3) Enter the system size using the dim parameter and which boundaries are periodic by using the 
+        periodicity parameter. E.g. periodicity=(False,True,False) sets periodic boundaries in the y direction
+        and non-periodic boundaries in the x and z directions. 
+        
+        The algorithm then outputs the r values and corresponding g(r) values in a tuple of numpy arrays for your pleasure
+        Notes:
+        
+        1) The Max R parameter sets the largest concentric shell radius that can be considered, which depends on your initial
+        choice of shell_r. Hence, a shell_r as small as possible is preferable, but make sure you have enough particles included
+        in shell_r to give reasonable statistics. 
+
+        2) The pcf, or g(r) values, should tend to 1 as r goes to infinity. However, if you have even a single non-periodic boundary
+        this will not necessarily be the case. """
+
+
+        Lx,Ly,Lz = dims
         maxR = int(np.ceil(min(Lx/2,Ly/2,Lz/2) - dr - shell_r)) 
-        print 'Max R: ' + str(maxR)
-        print 'Total N:' + str(self.N)
-
-        bool_array = self.distances((64,64,64)) < shell_r
+        print 'Max Shell Radius: ' + str(maxR)
+        
+        all_particle_coords = self.x()
+        
+        """This is some numpy trickery to select the rows of the allcoords matrix which match the conditions of bool_array"""
+        bool_array = self.distances((Lx/2,Ly/2,Lz/2)) < shell_r
         bool_array = bool_array.reshape(self.N)
-        coords = allcoords[bool_array,:]
+        particles_within_shell_r = all_particle_coords[bool_array,:]
 
-        N = coords.shape[0]
-        print 'Number of considered particles: ' + str(N)
+        N = particles_within_shell_r.shape[0]
+        print 'Number of particles selected by shell_r: ' + str(N)
 
         rvals  = [] 
         pvals  = [] 
 
         for r in np.nditer(np.arange(0,maxR+1,dr)):
             total_particles_in_shell = 0           
-            for i in coords:                       
-                raw_dists                 = self.displacements(i)
-                filtered_dists            = MDMatrix._periodic_filter(raw_dists)
-                dists                     = np.linalg.norm(filtered_dists,axis=1)
+            for p in particles_within_shell_r:        
+                "Compute the displacements between particle p and all other particles"
+                displacements             = self.displacements(p)
+                "Take into account the periodic boundaries"
+                filtered_displacements    = MDMatrix._periodic_filter(displacements,dims,periodicity)
+                dists                     = np.linalg.norm(filtered_displacements,axis=1)
+                "Remove particle self-distance. Not necessary because it will never be included in the shell variable, 
+                but just making it explicit"
                 dists                     = dists[np.where(dists != 0.0)]
                 shell                     = dists[(np.where((dists >= r) & (dists <= r + dr)))]
-                number_in_shell           = shell.size                                         
-                total_particles_in_shell += number_in_shell                                    
+                number_in_current_shell   = shell.size                                         
+                total_particles_in_shell += number_in_current_shell                                    
 
-        
+            "This version of shell_vol should be used because it is EXACT. Do not use the approximate (4*np.pi/3.)*r**2*dr."
             shell_vol = (4*np.pi/3.)*((r + dr)**3 - r**3)                           
-            normalised_by_number_of_p        = total_particles_in_shell/np.float(N) 
-            normalised_by_shell_volume       = normalised_by_number_of_p/shell_vol  
-            normalised_by_number_density     = normalised_by_shell_volume/rho       
+            
+            "Normalise by number of particles expected in an ideal gas"
+            normalised_by_no_of_particles = total_particles_in_shell/np.float(N) 
+            normalised_by_shell_volume    = normalised_by_no_of_particles/shell_vol  
+            normalised_by_number_density  = normalised_by_shell_volume/(np.float(self.N)/(Lx*Ly*Lz))
 
         
             rvals.append(r)                             
