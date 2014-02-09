@@ -7,40 +7,7 @@ import pdb
 
 from collections import OrderedDict
 
-class MDFile(object):
-    """Create an MD file object e.g. bla = MDFile('md-filename-here')"""
 
-    def __init__(self,mdfile):
-        self.f = mdfile
-        
-    def path(self):
-        """Returns the full path of the output directory"""
-        return os.path.abspath(self.f)
-    
-    def create_matrix(self,pid=None):
-        """Reads lines from a file and stores as a matrix"""
-        matrix  = []
-        f = open(self.f, 'r')
-        for line in f:
-            line = line.strip()
-            if len(line) > 0:
-                try:
-                    matrix.append(map(np.float, line.split()))
-                except ValueError:
-                    pass
-        f.close()
-        if pid is not None:
-            return matrix[pid]
-        else:
-            return matrix        
-    
-    def tstep(self):
-        """Strips the tstep out of the filename and returns it as an int"""
-        fname = os.path.split(self.f)[1]
-        str = re.search('t\d\d\d\d\d\d\d\d-\d\d\d\d\d\d\d\d\d\d',fname).group()
-        splitstr = str.split('-')[0]
-        strip_zeros = splitstr.lstrip('t0')
-        return int(strip_zeros)
         
 class MDMatrix(object):
     """Create an MDMatrix object e.g. matrix = MDMatrix(MDfile.create_matrix)"""
