@@ -3,6 +3,7 @@
 import os
 import numpy as np
 import re
+import pdb
 
 from collections import OrderedDict
 
@@ -208,6 +209,8 @@ class MDMatrix(object):
         return self._3vector('id',pid)
 
     def _get_angle_matrix(self,pid=None):
+        """This function simply divides each element of the orientation matrix
+        by the norm of its corresponding row in the orientation matrix"""
         orientation_matrix = self.o(pid)
         if pid is not None:
             return orientation_matrix/np.linalg.norm(orientation_matrix)
@@ -275,10 +278,10 @@ class MDMatrix(object):
             array[:,0] = np.where(array[:,0] >= 0.5*Lx, array[:,0] - Lx, array[:,0])
         
         if periodicity[1]:
-            array[:,1] = np.where(array[:,1] >= 0.5*Ly, array[:,1] - Ly , array[:,1])
+            array[:,1] = np.where(array[:,1] >= 0.5*Ly, array[:,1] - Ly, array[:,1])
         
         if periodicity[2]:
-            array[:,2] = np.where(array[:,2] >= 0.5*Lz, array[:,2] - Lz , array[:,2])
+            array[:,2] = np.where(array[:,2] >= 0.5*Lz, array[:,2] - Lz, array[:,2])
 
         return array
 
@@ -299,15 +302,18 @@ class MDMatrix(object):
         periodicity parameter. E.g. periodicity=(False,True,False) sets periodic boundaries in the y direction
         and non-periodic boundaries in the x and z directions. 
         
-        The algorithm then outputs the r values and corresponding g(r) values in a tuple of numpy arrays for your pleasure
+        The algorithm then outputs the r values and corresponding 
+        g(r) values in a tuple of numpy arrays for your pleasure
+        
         Notes:
         
-        1) The Max R parameter sets the largest concentric shell radius that can be considered, which depends on your initial
-        choice of shell_r. Hence, a shell_r as small as possible is preferable, but make sure you have enough particles included
-        in shell_r to give reasonable statistics. 
+        1) The Max R parameter sets the largest concentric shell radius 
+        that can be considered, which depends on your initial choice of shell_r.
+        Hence, a shell_r as small as possible is preferable, but make sure you have 
+        enough particles included in shell_r to give reasonable statistics. 
 
-        2) The pcf, or g(r) values, should tend to 1 as r goes to infinity. However, if you have even a single non-periodic boundary
-        this will not necessarily be the case. """
+        2) The pcf, or g(r) values, should tend to 1 as r goes to infinity. However, if you 
+        have even a single non-periodic boundary this will not necessarily be the case. """
 
 
         Lx,Ly,Lz = dims
@@ -335,8 +341,8 @@ class MDMatrix(object):
                 "Take into account the periodic boundaries"
                 filtered_displacements    = MDMatrix._periodic_filter(displacements,dims,periodicity)
                 dists                     = np.linalg.norm(filtered_displacements,axis=1)
-                "Remove particle self-distance. Not necessary because it will never be included in the shell variable, 
-                but just making it explicit"
+                """Remove particle self-distance. Not necessary because it will never 
+                be included in the shell variable, but just making it explicit"""
                 dists                     = dists[np.where(dists != 0.0)]
                 shell                     = dists[(np.where((dists >= r) & (dists <= r + dr)))]
                 number_in_current_shell   = shell.size                                         
@@ -357,7 +363,50 @@ class MDMatrix(object):
 
         return (np.array(rvals),np.array(pvals))
     
+
+    def orientation_correlation_function(self,dims=(96,256,256),periodicity=(False,True,True),shell_r=15,dr=1.0):
         
+        Lx,Ly,Lz = dims
+        maxR = int(np.ceil(min(Ly/2,Lz/2) - dr - shell_r)) 
+        print 'Max Shell Radius: ' + str(maxR)
+
+        ids_reference_particles = np.where(self.distances((Lx/2,Ly/2,Lz/2)) < shell_r)[0]
+        print "ID's of reference particles: " + str(ids_reference_particles)
+
+        rvals = []
+        ovals = []
+
+        for r in np.nditer(np.arange(0,maxR+1,dr)):
+    
+            ref_p_cosines = []
+            for ref_p in ids_reference_particles:
+                ids_particles_within_r = np.where(self.distances(self.x(ref_p)) < r)[0]
+                no_particles_within_r = ids_particles_within_r.shape[0]
+                if no_particles_within_r <= 1:
+                    break
+        
+                cosines_array = []
+                for p in ids_particles_within_r:
+                    cosine = np.cos(self.angle(ref_p,radians=True) - self.angle(p,radians=True))
+                    if not p == ref_p:
+                        cosines_array.append(cosine)
+                cosines_avg = np.mean(cosines_array,axis=0)
+                ref_p_cosines.append(cosines_avg)
+        
+            if not len(ref_p_cosines) == 0:
+                ref_p_cosines_avg = np.mean(ref_p_cosines,axis=0)
+                rvals.append(r)
+                ovals.append(ref_p_cosines_avg)
+            else:
+                pass
+
+
+        return (np.array(rvals),np.array(ovals))
+
+
+
+    
+    
 
 
 
