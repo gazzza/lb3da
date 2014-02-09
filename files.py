@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import numpy as np
 
 class OutputDir(object):
     """Create an output directory object e.g. output_dir = OutputDir('path-to-file')"""
