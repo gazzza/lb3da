@@ -2,6 +2,7 @@
 
 import os
 import numpy as np
+import re
 
 class OutputDir(object):
     """Create an output directory object e.g. output_dir = OutputDir('path-to-file')"""
