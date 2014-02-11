@@ -332,7 +332,41 @@ class MDMatrix(object):
     
 
     def orientation_correlation_function(self,dims=(96,256,256),periodicity=(False,True,True),shell_r=15,dr=1.0):
+        """Calculates the orientation correlation function (ocf). This ocf differs from most in the literature 
+        because it can handle non-periodic boundaries and finite-sized particles. 
+
+        The algorithm should be used as follows:
         
+        1) Select some particles close to the centre of the system by choosing shell_r parameter. 
+        E.g. shell_r = 15 will find all particles within a distance of 15 of the centre of the system.
+
+        2) Choose how many concentric shells you want by choosing dr. 
+        Make sure you take into account your particle sizes when selecting dr. 
+        E.g. Does choosing dr < 1.0 give meaningful results if your particles are radius 5?
+        
+        3) Enter the system size using the dim parameter and which boundaries are periodic by using the 
+        periodicity parameter. E.g. periodicity=(False,True,False) sets periodic boundaries in the y direction
+        and non-periodic boundaries in the x and z directions. 
+        
+        The algorithm then outputs the r values and corresponding 
+        o(r) values in a tuple of numpy arrays for your pleasure
+        
+        Notes:
+        
+        1) The Max R parameter sets the largest concentric shell radius 
+        that can be considered, which depends on your initial choice of shell_r.
+        Hence, a shell_r as small as possible is preferable, but make sure you have 
+        enough particles included in shell_r to give reasonable statistics. 
+
+        Algorithm overview:
+
+        1) Finds ID's of particles within a distance shell_r of the system centre.
+        These particles are called reference particles.
+        2) For each of these reference particles, calculates the angle difference between
+        the reference particle and every other particle within a distance r.
+        3) Averages the cosine of these differences
+        4) Averages (3) over all the reference particles."""
+
         Lx,Ly,Lz = dims
         maxR = int(np.ceil(min(Ly/2,Lz/2) - dr - shell_r)) 
         print 'Max Shell Radius: ' + str(maxR)
