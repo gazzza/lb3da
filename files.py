@@ -3,6 +3,7 @@
 import os
 import numpy as np
 import re
+import pdb
 
 class OutputDir(object):
     """Create an output directory object e.g. output_dir = OutputDir('path-to-file')"""
@@ -62,4 +63,9 @@ class MDFile(object):
         str = re.search('t\d\d\d\d\d\d\d\d-\d\d\d\d\d\d\d\d\d\d',fname).group()
         splitstr = str.split('-')[0]
         strip_zeros = splitstr.lstrip('t0')
-        return int(strip_zeros)
+        if len(strip_zeros) == 0:
+            timestep = 0
+        else:
+            timestep = int(strip_zeros)
+
+        return timestep
